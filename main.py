@@ -74,14 +74,22 @@ class GsCoreAdapter(Star):
         self.temp_dir: Path = StarTools.get_data_dir(PLUGIN_NAME) / "temp"
         self.temp_dir.mkdir(parents=True, exist_ok=True)
 
+        host = _cfg_str(config, "IP", "localhost")
+        port = _cfg_str(config, "PORT", "8765")
+        # 下发的图片/语音/视频可能是相对路径(如 /api/image/xxx.jpg), 需拼接资源服务器
+        # BaseURL; 留空时默认指向 WS 同主机端口的 http 服务。末尾斜杠统一去除。
+        base_url = _cfg_str(config, "BASE_URL", "").strip() or f"http://{host}:{port}"
+        base_url = base_url.rstrip("/")
+
         self.client: GsClient = GsClient(
             context,
             bot_id=_cfg_str(config, "BOT_ID", "AstrBot"),
-            host=_cfg_str(config, "IP", "localhost"),
-            port=_cfg_str(config, "PORT", "8765"),
+            host=host,
+            port=port,
             ws_token=_cfg_str(config, "WS_TOKEN", ""),
             max_retry=_cfg_int(config, "MAX_RETRY_TIMES", 30),
             temp_dir=self.temp_dir,
+            base_url=base_url,
         )
 
     @override

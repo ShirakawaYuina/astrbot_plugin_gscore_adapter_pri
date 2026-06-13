@@ -47,6 +47,7 @@ class GsClient:
         ws_token: str,
         max_retry: int,
         temp_dir: Path,
+        base_url: str,
     ) -> None:
         self.context: Context = context
         self.bot_id: str = bot_id
@@ -55,6 +56,7 @@ class GsClient:
         self.ws_token: str = ws_token
         self.max_retry: int = max_retry
         self.temp_dir: Path = temp_dir
+        self.base_url: str = base_url
 
         self._ws: ClientConnection | None = None
         self._queue: asyncio.Queue[MessageReceive] = asyncio.Queue()
@@ -215,7 +217,7 @@ class GsClient:
 
         platform = self.context.get_platform_inst(msg.bot_self_id)
         components = await gs_to_components(
-            msg.content, msg.bot_id, platform, self.temp_dir
+            msg.content, msg.bot_id, platform, self.temp_dir, self.base_url
         )
         if not components:
             return None

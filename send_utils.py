@@ -69,13 +69,22 @@ async def gs_to_components(
     bot_id: str,
     platform: Platform | None,
     temp_dir: Path,
+    base_url: str,
 ) -> list[BaseMessageComponent]:
     """把 core 下发的 GsMessage 列表转换为 AstrBot 消息组件列表.
 
     image/record/video 均为双形态(base64:// 与 link://), 两种都必须处理;
+    link 形态可能是相对路径(如 /api/image/xxx.jpg), 需用 base_url 补全为绝对 URL;
     node(合并转发)仅 onebot 走原生 Nodes, 其余平台展开逐段发送;
     excute_ban_user 段为控制语义, 就地执行禁言后不进消息链.
     """
+
+    def _abs_url(url: str) -> str:
+        # 已是绝对 URL(http/https)直接用; 否则按相对路径拼到 base_url 后
+        if url.startswith(("http://", "https://")):
+            return url
+        return f"{base_url}/{url.lstrip('/')}"
+
     message: list[BaseMessageComponent] = []
     for _c in gsmsgs:
         if not _c.data:
@@ -84,7 +93,7 @@ async def gs_to_components(
             message.append(Plain(_c.data))
         elif _c.type == "image":
             if _c.data.startswith("link://"):
-                image_url = _c.data[7:]
+                image_url = _abs_url(_c.data[7:])
                 # 单独输出完整 URL 与长度, 避免长链接混在单行日志中不便确认源数据。
                 logger.info(
                     "[GsCore] 准备转换 link 图片URL\n"
@@ -108,7 +117,7 @@ async def gs_to_components(
                 message.append(Image.fromBase64(data))
         elif _c.type == "record":
             if _c.data.startswith("link://"):
-                message.append(Record.fromURL(_c.data[7:]))
+                message.append(Record.fromURL(_abs_url(_c.data[7:])))
             else:
                 data = _c.data
                 if data.startswith("base64://"):
@@ -116,7 +125,7 @@ async def gs_to_components(
                 message.append(Record.fromBase64(data))
         elif _c.type == "video":
             if _c.data.startswith("link://"):
-                message.append(Video.fromURL(_c.data[7:]))
+                message.append(Video.fromURL(_abs_url(_c.data[7:])))
             else:
                 path = temp_dir / f"{uuid.uuid4().hex}.mp4"
                 store_file(path, _c.data)
@@ -129,7 +138,11 @@ async def gs_to_components(
                     node_message.append(
                         Node(
                             await gs_to_components(
-                                [GsMessage(**_node)], bot_id, platform, temp_dir
+                                [GsMessage(**_node)],
+                                bot_id,
+                                platform,
+                                temp_dir,
+                                base_url,
                             )
                         )
                     )
@@ -138,7 +151,11 @@ async def gs_to_components(
                 for _node in _c.data:
                     message.extend(
                         await gs_to_components(
-                            [GsMessage(**_node)], bot_id, platform, temp_dir
+                            [GsMessage(**_node)],
+                            bot_id,
+                            platform,
+                            temp_dir,
+                            base_url,
                         )
                     )
         elif _c.type == "file":

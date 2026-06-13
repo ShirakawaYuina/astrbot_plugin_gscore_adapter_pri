@@ -23,6 +23,12 @@
         "hint": "WsToken",
         "default": ""
     },
+    "BASE_URL": {
+        "description": "GsCore资源服务器的BaseURL，用于拼接下发的相对图片/语音/视频链接",
+        "type": "string",
+        "hint": "例如 http://localhost:8765 。留空时默认使用 http://{IP}:{PORT}",
+        "default": ""
+    },
     "GSCORE_ONLY_PREFIXES": {
         "description": "仅允许转发到GsCore的普通消息前缀列表；为空时转发全部普通消息",
         "type": "list",
