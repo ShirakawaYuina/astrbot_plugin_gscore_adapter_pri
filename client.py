@@ -12,16 +12,17 @@ import asyncio
 from contextlib import suppress
 from pathlib import Path
 
-from astrbot.api import logger
-from astrbot.api.event import MessageChain
-from astrbot.core.platform.message_session import MessageSession
-from astrbot.core.platform.message_type import MessageType
-from astrbot.core.star.context import Context
 from msgspec import json as msgjson
 from websockets.asyncio.client import ClientConnection
 from websockets.asyncio.client import connect as ws_connect
 from websockets.exceptions import ConnectionClosed
 from websockets.protocol import State
+
+from astrbot.api import logger
+from astrbot.api.event import MessageChain
+from astrbot.core.platform.message_session import MessageSession
+from astrbot.core.platform.message_type import MessageType
+from astrbot.core.star.context import Context
 
 from .models import Message as GsMessage
 from .models import MessageReceive, MessageSend

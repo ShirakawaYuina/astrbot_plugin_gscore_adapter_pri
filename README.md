@@ -1,4 +1,4 @@
-# ⚙️ astrbot_plugin_gscore_adapter v0.5.0
+# ⚙️ astrbot_plugin_gscore_adapter v0.5.1
 
 > [!IMPORTANT]  
 > 请注意！该插件并不能开箱即用，你还需要完成Core的安装和配置！！
@@ -16,7 +16,13 @@
 
 - `GSCORE_ONLY_PREFIXES`：可选字符串列表。
   - 示例：`["core", "gs", "sr", "zzz", "ww"]`
-  - 当用户消息文本命中这些前缀时，消息仅会发送给 GsCore，并显式调用 `event.stop_event()` 阻断后续 LLM 流程。
+  - 列表为空时，所有普通消息都会继续转发给 GsCore。
+  - 列表非空时，仅文本命中这些前缀的普通消息会转发给 GsCore；命中后会显式调用 `event.stop_event()` 阻断后续 LLM 流程。
+  - 未命中前缀的普通消息不会转发给 GsCore，会继续交给 AstrBot 后续流程处理。
+
+## v0.5.1 修复
+
+- 修复 `GSCORE_ONLY_PREFIXES` 只阻断 AstrBot LLM、但未阻止非目标前缀消息转发到 GsCore 的问题。
 
 ## v0.5.0 新特性
 

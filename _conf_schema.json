@@ -24,9 +24,9 @@
         "default": ""
     },
     "GSCORE_ONLY_PREFIXES": {
-        "description": "仅转发到GsCore且拦截AstrBot后续LLM的触发前缀列表",
+        "description": "仅允许转发到GsCore的普通消息前缀列表；为空时转发全部普通消息",
         "type": "list",
-        "hint": "例如: core, gs, sr, zzz, ww，每条输入后回车",
+        "hint": "例如: core, gs, sr, zzz, ww。配置后，未命中这些前缀的普通消息不会转发到GsCore",
         "default": []
     },
     "MAX_RETRY_TIMES": {

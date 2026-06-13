@@ -4,7 +4,7 @@
 - 插件生命周期: 加载即建立与 core 的 WS 连接, 卸载/重载时优雅断开;
 - 监听 AstrBot 全部消息事件, 转换为 MessageReceive 上报 core;
 - 监听平台元事件(进群/退群/戳一戳), 单独成包上报(见 meta_event.py);
-- GSCORE_ONLY_PREFIXES 命中时拦截 AstrBot 后续 LLM 流程.
+- GSCORE_ONLY_PREFIXES 配置后, 仅命中目标前缀的普通消息转发给 core.
 
 协议侧(连接/下发/回执/控制包)见 client.py 与 send_utils.py.
 """
@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import override
 
 import aiofiles
+
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, MessageEventResult, filter
 from astrbot.api.star import Context, Star, StarTools, register
@@ -60,7 +61,7 @@ def _cfg_str_list(config: AstrBotConfig, key: str) -> list[str]:
     PLUGIN_NAME,
     "KimigaiiWuyi",
     "用于链接SayuCore（早柚核心）的适配器！适用于多种游戏功能, 原神、星铁、绝区零、鸣朝、雀魂等游戏的最佳工具箱！",
-    "0.5.0",
+    "0.5.1",
 )
 class GsCoreAdapter(Star):
     def __init__(self, context: Context, config: AstrBotConfig) -> None:
@@ -101,9 +102,14 @@ class GsCoreAdapter(Star):
         except OSError as e:
             logger.warning(f"[GsCore] 清理临时目录失败: {e}")
 
-    def _is_gscore_only_message(self, event: AstrMessageEvent) -> bool:
+    def _should_report_gscore_message(self, event: AstrMessageEvent) -> bool:
+        """判断普通消息是否需要转发给 GsCore.
+
+        GSCORE_ONLY_PREFIXES 为空时保持旧行为, 继续把所有普通消息上报 core;
+        配置前缀后则作为明确白名单, 未命中的普通消息直接交还 AstrBot 后续流程。
+        """
         if not self.GSCORE_ONLY_PREFIXES:
-            return False
+            return True
 
         raw_text = event.message_str.lstrip()
         if not raw_text:
@@ -184,6 +190,11 @@ class GsCoreAdapter(Star):
             await self.client.report(meta_msg)
             return
 
+        should_report_gscore = self._should_report_gscore_message(event)
+        if not should_report_gscore:
+            logger.debug("[GsCore] 普通消息未命中GSCORE_ONLY_PREFIXES，跳过上报core")
+            return
+
         content = await self._build_content(event)
         if not content:
             return
@@ -216,11 +227,12 @@ class GsCoreAdapter(Star):
         logger.info(f"【发送】[gsuid-core]: {msg.bot_id}")
         await self.client.report(msg)
 
-        if self._is_gscore_only_message(event):
-            # 按 AstrBot 文档显式阻断事件传播, 不参与后续 LLM 等流程
+        if self.GSCORE_ONLY_PREFIXES:
+            # 已配置前缀白名单时, 能走到这里说明消息命中目标前缀;
+            # 按 AstrBot 文档显式阻断事件传播, 避免同一条指令继续触发后续 LLM。
             event.stop_event()
             logger.info(
-                "[GsCore] 当前消息命中GSCORE_ONLY_PREFIXES，已调用 stop_event() 拦截后续 AstrBot LLM 流程"
+                "[GsCore] 当前消息命中GSCORE_ONLY_PREFIXES，已上报core并拦截后续 AstrBot LLM 流程"
             )
 
     @filter.permission_type(filter.PermissionType.ADMIN)
