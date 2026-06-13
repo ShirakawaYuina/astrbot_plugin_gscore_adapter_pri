@@ -85,12 +85,21 @@ async def gs_to_components(
         elif _c.type == "image":
             if _c.data.startswith("link://"):
                 image_url = _c.data[7:]
-                # 记录 core 下发的真实图片 URL, 便于定位 AstrBot URL 校验失败的源数据。
-                logger.info(f"[GsCore] 准备转换 link 图片URL: {image_url}")
+                # 单独输出完整 URL 与长度, 避免长链接混在单行日志中不便确认源数据。
+                logger.info(
+                    "[GsCore] 准备转换 link 图片URL\n"
+                    f"[GsCore] URL长度: {len(image_url)}\n"
+                    f"[GsCore] 完整URL: {image_url}"
+                )
                 try:
                     message.append(Image.fromURL(image_url))
                 except Exception as e:
-                    logger.error(f"[GsCore] link 图片URL无效: {image_url}, 错误: {e}")
+                    logger.error(
+                        "[GsCore] link 图片URL无效\n"
+                        f"[GsCore] URL长度: {len(image_url)}\n"
+                        f"[GsCore] 完整URL: {image_url}\n"
+                        f"[GsCore] 错误: {e}"
+                    )
                     raise
             else:
                 data = _c.data
