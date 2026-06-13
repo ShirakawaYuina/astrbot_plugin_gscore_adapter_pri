@@ -84,7 +84,14 @@ async def gs_to_components(
             message.append(Plain(_c.data))
         elif _c.type == "image":
             if _c.data.startswith("link://"):
-                message.append(Image.fromURL(_c.data[7:]))
+                image_url = _c.data[7:]
+                # 记录 core 下发的真实图片 URL, 便于定位 AstrBot URL 校验失败的源数据。
+                logger.info(f"[GsCore] 准备转换 link 图片URL: {image_url}")
+                try:
+                    message.append(Image.fromURL(image_url))
+                except Exception as e:
+                    logger.error(f"[GsCore] link 图片URL无效: {image_url}, 错误: {e}")
+                    raise
             else:
                 data = _c.data
                 if data.startswith("base64://"):
